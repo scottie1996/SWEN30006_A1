@@ -5,12 +5,13 @@ import java.util.*;
 import strategies.IMailPool;
 
 /**
- * This class generates the mail
+ * This class generates the mail 此类生成邮件
  */
 public class MailGenerator {
 
     public final int MAIL_TO_CREATE;
     public final int MAIL_MAX_WEIGHT;
+    public int count = 0;
     
     private int mailCreated;
 
@@ -23,19 +24,20 @@ public class MailGenerator {
     private Map<Integer,ArrayList<MailItem>> allMail;
 
     /**
-     * Constructor for mail generation
-     * @param mailToCreate roughly how many mail items to create
-     * @param mailPool where mail items go on arrival
-     * @param seed random seed for generating mail
+     * Constructor for mail generation 邮件生成的构造函数
+     * @param mailToCreate roughly how many mail items to create 大约要创建多少个邮件项目
+     * @param mailPool where mail items go on arrival 邮件到达的地方
+     * @param seed random seed for generating mail 用于生成邮件的随机种子
      */
     public MailGenerator(int mailToCreate, int mailMaxWeight, IMailPool mailPool, HashMap<Boolean,Integer> seed){
+        //读取或生成seed
         if(seed.containsKey(true)){
         	this.random = new Random((long) seed.get(true));
         }
         else{
         	this.random = new Random();	
         }
-        // Vary arriving mail by +/-20%
+        // Vary arriving mail by +/-20% 使到达的邮件变化+/- 20％
         MAIL_TO_CREATE = mailToCreate*4/5 + random.nextInt(mailToCreate*2/5);
         MAIL_MAX_WEIGHT = mailMaxWeight;
         // System.out.println("Num Mail Items: "+MAIL_TO_CREATE);
@@ -46,13 +48,13 @@ public class MailGenerator {
     }
 
     /**
-     * @return a new mail item that needs to be delivered
+     * @return a new mail item that needs to be delivered 需要发送的新邮件
      */
     private MailItem generateMail(boolean generateFragile){
-        int dest_floor = generateDestinationFloor();
-        int arrival_time = generateArrivalTime();
-        int weight = generateWeight();
-        boolean isFragile = generateFragile && generateFragile();
+        int dest_floor = generateDestinationFloor();//根据seed随机生成
+        int arrival_time = generateArrivalTime();//根据seed随机生成
+        int weight = generateWeight();//根据seed随机生成
+        boolean isFragile = generateFragile && generateFragile();//也是随机的
         return new MailItem(dest_floor, arrival_time, weight, isFragile);
     }
     
@@ -76,7 +78,9 @@ public class MailGenerator {
     	final double mean = 200.0; // grams for normal item
     	final double stddev = 1000.0; // grams
     	double base = random.nextGaussian();
-    	if (base < 0) base = -base;
+    	if (base < 0) {
+            base = -base;
+        }
     	int weight = (int) (mean + base * stddev);
         return weight > MAIL_MAX_WEIGHT ? MAIL_MAX_WEIGHT : weight;
     }
@@ -102,7 +106,7 @@ public class MailGenerator {
             }
             else{
                 /** If the key doesn't exist then set a new key along with the array of MailItems to add during
-                 * that time step.
+                 * that time step.如果该键不存在，则在该时间步中设置一个新键以及要添加的MailItems数组。
                  */
                 ArrayList<MailItem> newMailList = new ArrayList<MailItem>();
                 newMailList.add(newMail);
@@ -120,13 +124,24 @@ public class MailGenerator {
     }
     
     /**
-     * While there are steps left, create a new mail item to deliver
+     * While there are steps left, create a new mail item to deliver 如果还剩下步骤时，创建一个新的邮件项目以进行传递
      */
     public void step(){
-    	// Check if there are any mail to create
+    	// Check if there are any mail to create 检查是否有任何邮件要创建
+
         if(this.allMail.containsKey(Clock.Time())){
             for(MailItem mailItem : allMail.get(Clock.Time())){
-                System.out.printf("T: %3d > + addToPool [%s]%n", Clock.Time(), mailItem.toString());
+                System.out.printf("T: %3d > + addToPool [%s]%n", Clock.Time(), mailItem.toString());//将邮件加入池中
+                count = count + 1;
+                System.out.println("mail_count"+count);
+                if (mailItem.fragile == true){
+                    //System.out.println("Add mail to pool: "+mailItem.id + " is a fragile item!!");
+                    mailPool.addToFragilePool(mailItem);
+                }
+                else {
+                    //System.out.println("Add mail to pool: "+mailItem.id + " is  not a fragile item!!");
+                    mailPool.addToUnFragilePool(mailItem);
+                }
                 mailPool.addToPool(mailItem);
             }
         }

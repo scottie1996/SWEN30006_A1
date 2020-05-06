@@ -1,5 +1,7 @@
 package automail;
 
+import java.util.HashMap;
+
 public class Building {
 	
 	
@@ -11,5 +13,7 @@ public class Building {
     
     /** Represents the mailroom location */
     public static final int MAILROOM_LOCATION = 1;
+
+    public static HashMap<Integer, Robot.FloorState> occupying_floot = new HashMap<>();
 
 }

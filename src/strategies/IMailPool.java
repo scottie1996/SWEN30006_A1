@@ -18,7 +18,10 @@ public interface IMailPool {
      * @param mailItem the mail item being added.
      */
     void addToPool(MailItem mailItem);
-    
+
+	void addToFragilePool(MailItem mailItem);
+
+	void addToUnFragilePool(MailItem mailItem);
     /**
      * load up any waiting robots with mailItems, if any.
      */

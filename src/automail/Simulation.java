@@ -101,17 +101,23 @@ public class Simulation {
         }
         Integer seed = seedMap.get(true);
         System.out.println("Seed: " + (seed == null ? "null" : seed.toString()));
+
         Automail automail = new Automail(mailPool, new ReportDelivery(), robots);
         MailGenerator mailGenerator = new MailGenerator(MAIL_TO_CREATE, MAIL_MAX_WEIGHT, automail.mailPool, seedMap);
         
         /** Initiate all the mail */
-        mailGenerator.generateAllMail(FRAGILE_ENABLED);
-        while(MAIL_DELIVERED.size() != mailGenerator.MAIL_TO_CREATE) {
-            mailGenerator.step();
+        mailGenerator.generateAllMail(FRAGILE_ENABLED);//根据seed生成所有的邮件
+        while(MAIL_DELIVERED.size() != mailGenerator.MAIL_TO_CREATE) {//运送过程还没结束
+			System.out.println("MAIL_DELIVERED: "+ MAIL_DELIVERED.size());
+			System.out.println("MAIL_TO_CREATE: "+mailGenerator.MAIL_TO_CREATE);
+			System.out.println("CurrentClockTime："+ Clock.Time());
+            mailGenerator.step();//将符合现在时刻的mail加入到mailpool中
             try {
-                automail.mailPool.step();
+                automail.mailPool.step();//给每个机器人分配任务
 				for (int i=0; i<robots; i++) {
-					automail.robots[i].step();
+					//System.out.println("for");
+					automail.robots[i].step();//让每个机器人按当前状态进行下一个步骤
+					//System.out.println("Robot "+ i + " are currently in floor: "+ automail.robots[i].current_floor+automail.robots[i].current_state);
 				}
 			} catch (ExcessiveDeliveryException|ItemTooHeavyException|BreakingFragileItemException e) {
 				e.printStackTrace();
@@ -126,7 +132,8 @@ public class Simulation {
     static class ReportDelivery implements IMailDelivery {
     	
     	/** Confirm the delivery and calculate the total score */
-    	public void deliver(MailItem deliveryItem){
+    	@Override
+		public void deliver(MailItem deliveryItem){
     		if(!MAIL_DELIVERED.contains(deliveryItem)){
     			MAIL_DELIVERED.add(deliveryItem);
                 System.out.printf("T: %3d > Deliv(%4d) [%s]%n", Clock.Time(), MAIL_DELIVERED.size(), deliveryItem.toString());
