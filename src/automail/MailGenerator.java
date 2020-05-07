@@ -51,6 +51,7 @@ public class MailGenerator {
      * @return a new mail item that needs to be delivered 需要发送的新邮件
      */
     private MailItem generateMail(boolean generateFragile){
+        /** Randomly generated according to seed*/
         int dest_floor = generateDestinationFloor();//根据seed随机生成
         int arrival_time = generateArrivalTime();//根据seed随机生成
         int weight = generateWeight();//根据seed随机生成
@@ -75,13 +76,11 @@ public class MailGenerator {
      * @return a random weight
      */
     private int generateWeight(){
-    	final double mean = 200.0; // grams for normal item
-    	final double stddev = 1000.0; // grams
-    	double base = random.nextGaussian();
-    	if (base < 0) {
-            base = -base;
-        }
-    	int weight = (int) (mean + base * stddev);
+        final double mean = 200.0; // grams for normal item
+        final double stddev = 1000.0; // grams
+        double base = random.nextGaussian();
+        if (base < 0) base = -base;
+        int weight = (int) (mean + base * stddev);
         return weight > MAIL_MAX_WEIGHT ? MAIL_MAX_WEIGHT : weight;
     }
     
@@ -133,7 +132,6 @@ public class MailGenerator {
             for(MailItem mailItem : allMail.get(Clock.Time())){
                 System.out.printf("T: %3d > + addToPool [%s]%n", Clock.Time(), mailItem.toString());//将邮件加入池中
                 count = count + 1;
-                System.out.println("mail_count"+count);
                 if (mailItem.fragile == true){
                     //System.out.println("Add mail to pool: "+mailItem.id + " is a fragile item!!");
                     mailPool.addToFragilePool(mailItem);

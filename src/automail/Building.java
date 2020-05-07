@@ -14,6 +14,7 @@ public class Building {
     /** Represents the mailroom location */
     public static final int MAILROOM_LOCATION = 1;
 
+    /** Represents the current occupation of each floors */
     public static HashMap<Integer, Robot.FloorState> occupying_floot = new HashMap<>();
 
 }

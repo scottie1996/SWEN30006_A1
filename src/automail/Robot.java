@@ -10,6 +10,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static automail.Building.occupying_floot;
+import static automail.Simulation.deliver_normally;
+import static automail.Simulation.deliver_caution;
+import static automail.Simulation.weight_deliver_normally;
+import static automail.Simulation.weight_deliver_caution;
+import static automail.Simulation.wapping_unwapping_time;
 
 /**
  * The robot delivers mail!
@@ -27,7 +32,7 @@ public class Robot {
     public enum FloorState {UNFRAGILEITEM,FRAGILEITEM}
     public enum RobotState { DELIVERING, WAITING, RETURNING ,WRAPPING, FRAGILE_SLEEPING,NORMAL_SLEEPING,UNWRAPPING,DELIVERING_FRAGILE}
     public RobotState current_state;
-    public int current_floor;//最后
+    private int current_floor;
     private int destination_floor;
     private int wrapping_time = 0;
 
@@ -78,6 +83,7 @@ public class Robot {
                 	if (tube != null) {//如果此时管道里有mail
                 		mailPool.addToPool(tube);
                         System.out.printf("T: %3d >  +addToPool [%s]%n", Clock.Time(), tube.toString());
+                        System.out.printf("T: %3d >  +addToPool [%s]%n", Clock.Time(), tube.toString());
                         tube = null;
                 	}
         			/** Tell the sorter the robot is ready 如果此时管道里没有mail，告诉分拣机机器人已经准备好*/
@@ -96,7 +102,7 @@ public class Robot {
                 	deliveryCounter = 0; // reset delivery counter
         			setRoute();
 
-        			/** 2020.5.5 18:06：加判断机器人是否需要wrapping的判断*/
+        			/**  judge whether the robot needs wrapping*/
         			if (this.fragileItem!=null){
         			    //if (wrapping_time != 2){
                             changeState(RobotState.WRAPPING);
@@ -115,6 +121,8 @@ public class Robot {
                     /** Delivery complete, report this to the simulator! */
                     occupying_floot.put(current_floor,FloorState.UNFRAGILEITEM);
                     delivery.deliver(deliveryItem);
+                    deliver_normally = deliver_normally+1;
+                    weight_deliver_normally = weight_deliver_normally + deliveryItem.weight;
                     occupying_floot.remove(current_floor);
                     deliveryItem = null;
                     deliveryCounter++;
@@ -156,10 +164,12 @@ public class Robot {
                     changeState(RobotState.WRAPPING);
                 }
                 else {
+                    wapping_unwapping_time = wapping_unwapping_time + 2;
                     changeState(RobotState.DELIVERING_FRAGILE);
                 }
                 break;
 
+            /** Tell the robot with fragile item to wait */
             case FRAGILE_SLEEPING:
                 if (occupying_floot.containsKey(current_floor + 1)||occupying_floot.containsKey(current_floor - 1)){//下一层或者上一层被占用
                     changeState(RobotState.FRAGILE_SLEEPING);
@@ -169,6 +179,7 @@ public class Robot {
                 }
                 break;
 
+            /** Tell the robot without fragile item to wait */
             case NORMAL_SLEEPING:
                 if (occupying_floot.containsKey(current_floor + 1)) {
                     if (occupying_floot.get(current_floor + 1).equals(FloorState.FRAGILEITEM)) {
@@ -186,9 +197,12 @@ public class Robot {
                     changeState(RobotState.DELIVERING);
                 }
                 break;
-
+            /** Take 1 unit of time */
             case UNWRAPPING:
                 delivery.deliver(fragileItem);
+                deliver_caution = deliver_caution + 1;
+                weight_deliver_caution = weight_deliver_caution + fragileItem.weight;
+                wapping_unwapping_time = wapping_unwapping_time + 1;
                 fragileItem = null;
                 occupying_floot.remove(current_floor);
                 deliveryCounter++;
@@ -203,6 +217,7 @@ public class Robot {
                     changeState(RobotState.RETURNING);
                 }
                 break;
+
             case DELIVERING_FRAGILE:
                 if(current_floor == destination_floor) {// If already here drop off either way
                     occupying_floot.put(destination_floor,FloorState.FRAGILEITEM);//占用这个楼层
@@ -249,12 +264,12 @@ public class Robot {
             } else {
                 current_floor--;
             }
-            if (this.fragileItem!=null){//fragile的货物还没运完
+            /*if (this.fragileItem!=null){//fragile的货物还没运完
                 System.out.printf("T: %3d > %9s-> CURRENT_FLOOR_:"+this.current_floor+"  [%s]%n", Clock.Time(), getIdTube(), fragileItem.toString());
             }
             else if (deliveryItem!=null){
                 System.out.printf("T: %3d > %9s-> CURRENT_FLOOR_:" +this.current_floor+" [%s]%n", Clock.Time(), getIdTube(), deliveryItem.toString());
-            }
+            }*/
         }catch (NullPointerException e){
             e.printStackTrace();
         }
@@ -262,7 +277,7 @@ public class Robot {
     }
     
     private String getIdTube() {
-    	return String.format("%s(%1d,%1d )", id, (tube == null ? 0 : 1),(fragileItem == null ? 0 : 1));//tube为0时代表无邮件在管道里，1为有
+        return String.format("%s(%1d)", id, (tube == null ? 0 : 1));//tube为0时代表无邮件在管道里，1为有
     }
     
     /**
@@ -276,10 +291,10 @@ public class Robot {
     	}
     	current_state = nextState;
     	if(nextState == RobotState.DELIVERING_FRAGILE){
-            System.out.printf("T: %3d > %9s-> DELIVERING FRAGILE:  [%s]%n", Clock.Time(), getIdTube(), fragileItem.toString());
+            System.out.printf("T: %3d > %9s-> [%s]%n", Clock.Time(), getIdTube(), fragileItem.toString());
         }
     	if(nextState == RobotState.DELIVERING){
-    	    System.out.printf("T: %3d > %9s-> DELIVERING:  [%s]%n", Clock.Time(), getIdTube(), deliveryItem.toString());
+            System.out.printf("T: %3d > %9s-> [%s]%n", Clock.Time(), getIdTube(), deliveryItem.toString());
     	}
     	if (nextState == RobotState.WRAPPING){
     	    wrapping_time = wrapping_time+1;

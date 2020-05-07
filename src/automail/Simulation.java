@@ -29,6 +29,13 @@ public class Simulation {
     private static ArrayList<MailItem> MAIL_DELIVERED;
     private static double total_score = 0;
 
+	/** statictics */
+    public static int deliver_normally =0;
+	public static int deliver_caution = 0;
+	public static int weight_deliver_normally = 0;
+	public static int weight_deliver_caution = 0;
+	public static int wapping_unwapping_time = 0;
+
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
     	Properties automailProperties = new Properties();
 		// Default properties
@@ -108,14 +115,17 @@ public class Simulation {
         /** Initiate all the mail */
         mailGenerator.generateAllMail(FRAGILE_ENABLED);//根据seed生成所有的邮件
         while(MAIL_DELIVERED.size() != mailGenerator.MAIL_TO_CREATE) {//运送过程还没结束
-			System.out.println("MAIL_DELIVERED: "+ MAIL_DELIVERED.size());
-			System.out.println("MAIL_TO_CREATE: "+mailGenerator.MAIL_TO_CREATE);
-			System.out.println("CurrentClockTime："+ Clock.Time());
+			//System.out.println("MAIL_DELIVERED: "+ MAIL_DELIVERED.size());
+			//System.out.println("MAIL_TO_CREATE: "+mailGenerator.MAIL_TO_CREATE);
+			//System.out.println("CurrentClockTime："+ Clock.Time());
+			/** Add the mail that matches the current moment to the mailpool */
             mailGenerator.step();//将符合现在时刻的mail加入到mailpool中
             try {
+            	/** Assign tasks to each robot */
                 automail.mailPool.step();//给每个机器人分配任务
 				for (int i=0; i<robots; i++) {
 					//System.out.println("for");
+					/** Let each robot proceed to the next step according to the current state */
 					automail.robots[i].step();//让每个机器人按当前状态进行下一个步骤
 					//System.out.println("Robot "+ i + " are currently in floor: "+ automail.robots[i].current_floor+automail.robots[i].current_state);
 				}
@@ -127,6 +137,10 @@ public class Simulation {
             Clock.Tick();
         }
         printResults();
+        if (STATISTICS_ENABLED){
+			printStatistic();
+		}
+
     }
     
     static class ReportDelivery implements IMailDelivery {
@@ -162,5 +176,15 @@ public class Simulation {
         System.out.println("T: "+Clock.Time()+" | Simulation complete!");
         System.out.println("Final Delivery time: "+Clock.Time());
         System.out.printf("Final Score: %.2f%n", total_score);
+
     }
+
+    public static void printStatistic(){
+			System.out.println("The number of packages delivered normally: "+ deliver_normally);
+			System.out.println("The number of packages delivered using caution: "+ deliver_caution);
+			System.out.println("The total weight of the packages delivered normally: "+ weight_deliver_normally);
+			System.out.println("The total weight of the packages delivered using caution: " + weight_deliver_caution);
+			System.out.println("The total amount of time spent by the special arms wrapping & unwrapping items: "+ wapping_unwapping_time);
+	}
+
 }
